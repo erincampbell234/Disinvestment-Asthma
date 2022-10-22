@@ -1,8 +1,6 @@
 ## Erin J. Campbell
-## Redlining and Asthma Data Wrangling
-## October 2021
-
-# This is the cleaned and condensed code for the RLxAsthma paper's data
+## Disinvestment and Asthma Data Wrangling
+## October 2022
 
 library(tidyverse)
 library(sf)
