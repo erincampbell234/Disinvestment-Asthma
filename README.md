@@ -3,7 +3,7 @@ Public repository for neighborhood disinvestment and asthma work.
 
 In these files, there are additional analyses, figures, and explorations that do not appear in the current drafts of the manuscript. 
 
-**Data.R**  data wrangling from public, raw datasets, to the datasets used in our analyses.
+**data.R**  data wrangling from public, raw datasets, to the datasets used in our analyses.
 
 **table1.R:**  descriptive statistics.
 
