@@ -1,0 +1,188 @@
+---
+title: "Models"
+author: "Erin J. Campbell"
+date: "7/11/2021"
+output:
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r, echo=FALSE, include=FALSE}
+library(tidyverse)
+library(stargazer)
+library(knitr)
+library(MASS)
+library(DescTools)
+
+reds<-readRDS("FINAL_alternate.rds")
+options(scipen = 999)
+
+```
+
+## Creating Indicators
+
+```{r}
+reds %>% dplyr::select(!geometry) %>%
+  mutate(Grade_AB = ifelse(holcnum <= 2, 1, 0),
+         Grade_C = ifelse(holcnum == 3, 1, 0),
+         Grade_D = ifelse(holcnum == 4, 1, 0),
+         Grade_CD = ifelse(holcnum >=2, 1, 0)) %>%
+  unite(cityVAR, city, state) -> reds
+
+reds %>% group_by(cityVAR) %>%
+  summarise(citymedRHI = median(`Total Respiratory (hazard quotient)`, na.rm = T)) -> reds_city
+            
+reds <- merge(reds, reds_city, all.x = T, by = "cityVAR")
+
+reds %>%
+  mutate(RHI_Ind = ifelse(`Total Respiratory (hazard quotient)`> 
+                            citymedRHI, 1, 0)) -> reds
+
+
+t1<-table(reds$cityVAR, reds$holc_grade)
+df1<- as.data.frame.matrix(addmargins(t1))
+
+length(unique(reds$city))
+
+reds %>%
+  group_by(cityVAR) %>% 
+  count(holc_grade)
+
+length(unique(reds$cityVAR))
+summary(reds$cityVAR)
+```
+
+## RHI Descriptives
+
+```{r}
+
+reds$holc_grade_rhi <- ifelse(reds$holc_grade == "A" | reds$holc_grade == "B", "AB", 
+                          ifelse(reds$holc_grade == "C", "C", "D"))
+
+reds %>% group_by(holc_grade_rhi) %>%
+  summarise(mean = mean(`Total Respiratory (hazard quotient)`),
+            sd = sd(`Total Respiratory (hazard quotient)`),
+            n = n()) -> rhistats
+reds %>% 
+  filter(holc_grade_rhi == "D" | holc_grade_rhi == "AB") %>%
+  summarise(meanRHI_D = mean(`Total Respiratory (hazard quotient)`),
+            n_d = n(),
+            sd_d = sd(`Total Respiratory (hazard quotient)`)) -> D_rhi
+
+reds %>% 
+  filter(holc_grade_rhi == "C" | holc_grade_rhi == "AB") %>%
+  summarise(meanRHI_D = mean(`Total Respiratory (hazard quotient)`),
+            n_d = n(),
+            sd_d = sd(`Total Respiratory (hazard quotient)`)) -> C_rhi
+
+
+rhi_mpd_c =  100*((0.539 - 0.499)/((0.539 + 0.499)/2))
+rhi_mpdci_low_c = rhi_mpd_c - 1.96*(0.15)/sqrt(9811)
+rhi_mpdci_high_c = rhi_mpd_c + 1.96*(0.15)/sqrt(9811)
+
+rhi_mpd_d =  100*((0.592 - 0.499)/((0.592 + 0.499)/2))
+
+rhi_mpdci_low_d = rhi_mpd_d- 1.96*(0.15)/sqrt(7119)
+rhi_mpdci_high_d = rhi_mpd_d + 1.96*(0.15)/sqrt(7119)
+
+
+
+```
+
+## Asthma Models
+
+```{r}
+
+ast1<- lm(Data_Value ~ Grade_C + Grade_D + as.factor(cityVAR), data = reds)
+summary(ast1, robust = TRUE)
+confint(ast1)
+
+ast2<- lm(Data_Value ~ Grade_C + Grade_D + as.factor(cityVAR) + o65 + u18 + male, data = reds)
+summary(ast2, robust = TRUE)
+confint(ast2)
+
+summary(reds$Data_Value)
+```
+
+## By City Models
+
+```{r}
+selected <- c("Los Angeles_CA", "Chicago_IL", "Brooklyn_NY", "Queens_NY", "Detroit_MI", "Philadelphia_PA", "Bronx_NY", "Manhattan_NY", "Baltimore_MD", "Cleveland_OH", "Milwaukee Co._WI", "San Francisco_CA", "Boston_MA", "Oakland_CA", "Indianapolis_IN", "Greater Kansas City_MO", "San Diego_CA", "New Orleans_LA", "Pittsburgh_PA", "Miami_FL", "Portland_OR", "Minneapolis_MN", "Dallas_TX", "Norfolk_VA", "Columbus_OH", "Seattle_WA", "St. Louis_MO", "Atlanta_GA", "Houston_TX", "Staten Island_NY", "San Antonio_TX","Toledo_OH", "Denver_CO", "Essex Co._NJ","Hudson Co._NJ", "Lower Westchester Co._NY", "Rochester_NY","Louisville_KY", "Omaha_NE", "Buffalo_NY","St. Paul_MN", "Oklahoma City_OK", "Birmingham_AL","Memphis_TN", "Fort Worth_TX", "Nashville_TN","Akron_OH", "Grand Rapids_MI", "Tampa_FL","Salt Lake City_UT", "Dayton_OH", "Richmond_VA","Spokane_WA", "Syracuse_NY", "Des Moines_IA","San Jose_CA", "Austin_TX", "Tulsa_OK","St. Petersburg_FL", "Lake Co. Gary_IN")
+
+reds_s <- reds %>% filter(cityVAR %in% selected)
+
+reds_s %>%
+  group_by(cityVAR) %>% 
+  count(holc_grade) %>%
+  spread(holc_grade, n) -> holcdist
+
+```
+
+```{r}
+
+## Asthma Models City By City
+
+for (i in selected){
+  y <- filter(reds_s, cityVAR == i)
+  regs <- lm(Data_Value ~ Grade_C + Grade_D + o65 + u18 + male, 
+             data = y)
+  print(coef(regs), digits = 2)
+  print(confint(regs), digits = 2)
+}
+```
+
+```{r}
+
+## RHI Mean Percent Differences City By City
+
+reds_s %>% group_by(cityVAR) %>%
+  filter(holc_grade == "D") %>%
+  summarise(meanRHI_D = mean(`Total Respiratory (hazard quotient)`),
+            n_d = n()) -> D_rhi
+
+reds_s %>% group_by(cityVAR) %>%
+  filter(Grade_AB == 1) %>%
+  summarise(meanRHI_AB = mean(`Total Respiratory (hazard quotient)`),
+                              n_ab = n()) -> AB_rhi
+
+reds_s %>% group_by(cityVAR) %>%
+  filter(Grade_AB == 1 | holc_grade == "D") %>%
+  summarise(meanRHI_ABD = mean(`Total Respiratory (hazard quotient)`),
+            n_abd = n(),
+            sd_abd = sd(`Total Respiratory (hazard quotient)`)) -> ABD_rhi
+
+meandiff_data <- merge(AB_rhi, D_rhi, by = "cityVAR" )
+meandiff_data <- merge(meandiff_data, ABD_rhi, by = "cityVAR")
+
+meandiff_data <- meandiff_data %>% 
+  mutate(meandiff = 100*((meanRHI_D - meanRHI_AB)/((meanRHI_D + meanRHI_AB)/2)),
+         CI_low = meandiff - 1.96*(sd_abd/sqrt(n_abd)),
+         CI_high = meandiff + 1.96*(sd_abd/sqrt(n_abd)))%>%
+  dplyr::select(cityVAR, meandiff, CI_low, CI_high)
+
+####################################
+reds_s %>% group_by(cityVAR) %>%
+  filter(holc_grade == "C") %>%
+  summarise(meanRHI_C = mean(`Total Respiratory (hazard quotient)`),
+            n_c = n()) -> C_rhi
+
+reds_s %>% group_by(cityVAR) %>%
+  filter(Grade_AB == 1 | holc_grade == "C") %>%
+  summarise(meanRHI_ABC = mean(`Total Respiratory (hazard quotient)`),
+            n_abc = n(),
+            sd_abc = sd(`Total Respiratory (hazard quotient)`)) -> ABC_rhi
+
+meandiff_data_C <- merge(AB_rhi, C_rhi, by = "cityVAR" )
+meandiff_data_C <- merge(meandiff_data_C, ABC_rhi, by = "cityVAR")
+
+meandiff_data_C <- meandiff_data_C %>% 
+  mutate(meandiff = 100*((meanRHI_C - meanRHI_AB)/((meanRHI_C + meanRHI_AB)/2)),
+         CI_low = meandiff - 1.96*(sd_abc/sqrt(n_abc)),
+         CI_high = meandiff + 1.96*(sd_abc/sqrt(n_abc)))%>%
+  dplyr::select(cityVAR, meandiff, CI_low, CI_high)
+
+
+```
