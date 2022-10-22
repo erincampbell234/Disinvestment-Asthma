@@ -8,8 +8,8 @@ library(sf)
 library(ggpubr)
 library(ggspatial)
 
-setwd("D:\\Packaged Code\\Figure 2")
-d<-readRDS("D:\\Packaged Code\\Figure 2\\FINAL_alternate.rds")
+setwd("D:\\Packaged Code\\Figure 1")
+d<-readRDS("D:\\Packaged Code\\Figure 1\\FINAL_alternate.rds")
 
 d$geometry<-st_as_sf(d$geometry)
 
