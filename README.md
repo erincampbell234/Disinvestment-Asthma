@@ -3,12 +3,12 @@ Public repository for neighborhood disinvestment and asthma work.
 
 In these files, there are additional analyses, figures, and explorations that do not appear in the current drafts of the manuscript. 
 
-**data.R**  data wrangling from public, raw datasets, to the datasets used in our analyses.
+**data_processing.R**  data wrangling from public, raw datasets, to the datasets used in our analyses.
 
-**table1.R:**  descriptive statistics.
+**descriptive_statistics.R:**  descriptive statistics.
 
-**table2_3.Rmd:** national (table 2) and city-by-city (table 3) models and statistics.
+**analytic_models.Rmd:** national and city-by-city models and statistics.
 
-**figure1.R:** sample maps of select cities.
+**supplemental_maps.R:** sample maps of select cities.
 
-**figure2.R:** national map showing city-by-city model results and statistics. 
+**map_figure.R:** national map showing city-by-city model results and statistics. 
