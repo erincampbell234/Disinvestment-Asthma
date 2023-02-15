@@ -20,8 +20,9 @@ RL$holc_grade[RL$holc_grade=="E"] <- "D"
 # prepare SES and Health data characteristics at census tract level 
 ###################################################################
 
+#insert census API key here
 options(tigris_use_cache = TRUE)
-census_api_key("252c5bf28058f94a17530826db8cdc2f16886624", 
+census_api_key("XXXXXXXXXXXXXXXXXXXXXXXXXXX", 
                install = TRUE,
                overwrite =  TRUE)
 
